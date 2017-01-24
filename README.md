@@ -5,7 +5,8 @@ Analysis framework for double beta decay bolometers
 ### Installation instructions
 
 #### Requirements:
-   * `ROOT` package installed, see http://root.cern.ch
+   * `CMake` package (>= 3.4.3), see https://cmake.org/
+   * `ROOT` package, see http://root.cern.ch
 
 #### Steps:
 
