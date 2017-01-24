@@ -7,7 +7,7 @@
 
 #### Steps:
 ```
-git clone git@github.com:ferriff/BeBe.git # or, if no github account `git clone https://github.com/ferriff/bebe.git'
+git clone git@github.com:ferriff/bebe.git # or, if no github account `git clone https://github.com/ferriff/bebe.git'
 cd bebe
 cmake .
 make
