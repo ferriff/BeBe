@@ -5,8 +5,8 @@ include_directories(${ROOT_INCLUDE_DIRS})
 
 # -- test_reading
 add_executable (test_reading test_reading.cc)
-target_link_libraries (test_reading LINK_PUBLIC BeBeReader Core RIO Tree)
+target_link_libraries (test_reading LINK_PUBLIC bebeReader Core RIO Tree)
 
 # -- quickana
 add_executable (quickana quickana.cc)
-target_link_libraries (quickana LINK_PUBLIC BeBePulse Core RIO Tree Hist)
+target_link_libraries (quickana LINK_PUBLIC bebePulse Core RIO Tree Hist)
