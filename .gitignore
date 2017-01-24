@@ -1,0 +1,6 @@
+*CMakeFiles*
+*Makefile*
+*.root
+*.gz
+*.dat
+*so
