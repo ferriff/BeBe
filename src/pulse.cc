@@ -1,4 +1,4 @@
-#include "Pulse.h"
+#include "pulse.h"
 
 #include "TF1.h"
 #include "TGraph.h"
@@ -6,50 +6,50 @@
 #include <algorithm>
 #include <limits>
 
-Pulse::Pulse(bbsize nsamples, const daqint * data) :
+bb::pulse::pulse(size_t nsamples, const daqint_t * data) :
         _nsamples(nsamples)
 {
-        _data = (bbreal *)calloc(_nsamples, sizeof(bbreal));
-        if (data) setData(data);
+        _data = (real_t *)calloc(_nsamples, sizeof(real_t));
+        if (data) set_data(data);
 }
 
-Pulse::~Pulse()
+bb::pulse::~pulse()
 {
         //if (_data) free(_data);
 }
 
-void Pulse::setData(const daqint * data)
+void bb::pulse::set_data(const daqint_t * data)
 {
-        for (bbsize i = 0; i < _nsamples; ++i) {
-                _data[i] = (bbreal)data[i];
+        for (size_t i = 0; i < _nsamples; ++i) {
+                _data[i] = (real_t)data[i];
         }
 }
 
 
-//void Pulse::print(FILE * fd)
+//void bb::pulse::print(FILE * fd)
 //{
-//        for (bbsize i = 0; i < _nsamples; ++i) {
+//        for (size_t i = 0; i < _nsamples; ++i) {
 //                fprintf(fd, "%u %d\n", i, _data[i]); // FIXME
 //        }
 //}
 
 
-void Pulse::printData(std::ostream & os)
+void bb::pulse::print_data(std::ostream & os)
 {
-        for (bbsize i = 0; i < _nsamples; ++i) {
+        for (size_t i = 0; i < _nsamples; ++i) {
                 os << i << " " << _data[i] << "\n";
         }
 }
 
 
-void Pulse::inspect(std::ostream & os)
+void bb::pulse::inspect(std::ostream & os)
 {
-        printData(os);
+        print_data(os);
         os << "#        average: " << average(0, _nsamples) << "\n";
-        os << "#  average[0:50]: " << average(0, std::min((bbsize)50, _nsamples)) << "\n";
-        os << "# average[0:100]: " << average(0, std::min((bbsize)100, _nsamples)) << "\n";
+        os << "#  average[0:50]: " << average(0, std::min((size_t)50, _nsamples)) << "\n";
+        os << "# average[0:100]: " << average(0, std::min((size_t)100, _nsamples)) << "\n";
         os << "#            rms: " << rms(0, _nsamples) << "\n";
-        os << "#      rms[0:50]: " << rms(0, std::min((bbsize)50, _nsamples)) << "\n";
+        os << "#      rms[0:50]: " << rms(0, std::min((size_t)50, _nsamples)) << "\n";
         auto p = maximum(0, _nsamples);
         os << "#            max: " << p.second << " at " << p.first << "\n";
         p = maximum_fitted(0, _nsamples);
@@ -57,42 +57,42 @@ void Pulse::inspect(std::ostream & os)
 }
 
 
-void Pulse::preProcess(bbsize ped_samples)
+void bb::pulse::pre_process(size_t ped_samples)
 {
-        bbreal ped = average(0, ped_samples);
-        for (bbsize i = 0; i < _nsamples; ++i) _data[i] = _data[i] - ped;
+        real_t ped = average(0, ped_samples);
+        for (size_t i = 0; i < _nsamples; ++i) _data[i] = _data[i] - ped;
 }
 
 
-bbreal Pulse::average(bbsize start, bbsize size)
+bb::real_t bb::pulse::average(size_t start, size_t size)
 {
-        bbreal m = 0;
-        for (bbsize i = start; i < size; ++i) {
+        real_t m = 0;
+        for (size_t i = start; i < size; ++i) {
                 m += _data[i];
         }
-        return (bbreal)m / (bbreal)size;
+        return (real_t)m / (real_t)size;
 }
 
 
-bbreal Pulse::rms(bbsize start, bbsize size)
+bb::real_t bb::pulse::rms(size_t start, size_t size)
 {
-        bbreal m = 0, mm = 0;
-        for (bbsize i = start; i < size; ++i) {
+        real_t m = 0, mm = 0;
+        for (size_t i = start; i < size; ++i) {
                 m  += _data[i];
                 mm += _data[i] * _data[i];
         }
-        m /= (bbreal)(size - start);
-        return sqrt(mm / (bbreal)(size - start) - m * m);
+        m /= (real_t)(size - start);
+        return sqrt(mm / (real_t)(size - start) - m * m);
 }
 
 
-std::pair<bbreal, bbreal> Pulse::maximum(bbsize start, bbsize size)
+std::pair<bb::real_t, bb::real_t> bb::pulse::maximum(size_t start, size_t size)
 {
-        bbreal m = -std::numeric_limits<bbreal>::max();
+        real_t m = -std::numeric_limits<real_t>::max();
         //std::cerr << "--> m = " << m << "\n";
         //fprintf(stderr, "--> m = %lf\n", m);
-        bbreal im = 0;
-        for (bbsize i = start; i < size; ++i) {
+        real_t im = 0;
+        for (size_t i = start; i < size; ++i) {
                 //fprintf(stderr, "--> %d %f %f\n", i, m, _data[i]);
                 if (_data[i] > m) {
                         m = _data[i];
@@ -104,11 +104,11 @@ std::pair<bbreal, bbreal> Pulse::maximum(bbsize start, bbsize size)
 }
 
 
-std::pair<bbreal, bbreal> Pulse::maximum_fitted(bbsize start, bbsize size)
+std::pair<bb::real_t, bb::real_t> bb::pulse::maximum_fitted(size_t start, size_t size)
 {
-        bbreal m = -std::numeric_limits<bbreal>::max();
-        bbsize im = 0;
-        for (bbsize i = start; i < size; ++i) {
+        real_t m = -std::numeric_limits<real_t>::max();
+        size_t im = 0;
+        for (size_t i = start; i < size; ++i) {
                 if (_data[i] > m) {
                         m = _data[i];
                         im = i;
@@ -119,43 +119,43 @@ std::pair<bbreal, bbreal> Pulse::maximum_fitted(bbsize start, bbsize size)
         TGraph * g = new TGraph();
         //g->SetNameTitle(tmp, tmp);
         int npoints = 10;
-        for (int i = 0; i < npoints; ++i) g->SetPoint(i, (bbreal)im - npoints / 2 + i, (bbreal)_data[im - npoints / 2 + i]);
+        for (int i = 0; i < npoints; ++i) g->SetPoint(i, (real_t)im - npoints / 2 + i, (real_t)_data[im - npoints / 2 + i]);
         g->Fit("pol2", "Q");
         TF1 * f = g->GetFunction("pol2");
-        bbreal p0 = f->GetParameter(0);
-        bbreal p1 = f->GetParameter(1);
-        bbreal p2 = f->GetParameter(2);
+        real_t p0 = f->GetParameter(0);
+        real_t p1 = f->GetParameter(1);
+        real_t p2 = f->GetParameter(2);
         delete g;
         // return tmax, max
         return std::make_pair(-0.5 * p1 / p2, p0 - 0.25 * p1 * p1 / p2);
 }
 
 
-bbreal Pulse::decay_time(bbsize imax, bbreal fraction)
+bb::real_t bb::pulse::decay_time(size_t imax, real_t fraction)
 {
-        bbreal m = _data[imax];
-        for (bbsize i = imax; i < _nsamples; ++i) {
+        real_t m = _data[imax];
+        for (size_t i = imax; i < _nsamples; ++i) {
                 if (_data[i] / m < fraction) return i - imax;
         }
         return 0;
 }
 
 
-bbreal Pulse::rise_time(bbsize imax, bbreal fraction)
+bb::real_t bb::pulse::rise_time(size_t imax, real_t fraction)
 {
-        bbreal m = _data[imax];
-        for (bbsize i = imax; i >= 0; --i) {
+        real_t m = _data[imax];
+        for (size_t i = imax; i >= 0; --i) {
                 if (_data[i] / m < fraction) return imax - i;
         }
         return 0;
 }
 
 
-bbreal Pulse::rise_time_interpolated(bbsize imax, bbreal fraction, bbreal amplitude, bbreal tmax)
+bb::real_t bb::pulse::rise_time_interpolated(size_t imax, real_t fraction, real_t amplitude, real_t tmax)
 {
-        bbreal m = _data[imax];
+        real_t m = _data[imax];
         if (amplitude) m = amplitude;
-        for (bbsize i = imax; i >= 0; --i) {
+        for (size_t i = imax; i >= 0; --i) {
                 if (_data[i] / m < fraction) {
                         //return imax - i + (m * fraction - _data[i]) / (_data[i + 1] - _data[i]) * 1.;
                         return tmax - (i + 1 + (_data[i + 1] - m * fraction) / (_data[i + 1] - _data[i]) * 1.);
@@ -165,11 +165,11 @@ bbreal Pulse::rise_time_interpolated(bbsize imax, bbreal fraction, bbreal amplit
 }
 
 
-bbreal Pulse::decay_time_interpolated(bbsize imax, bbreal fraction, bbreal amplitude, bbreal tmax)
+bb::real_t bb::pulse::decay_time_interpolated(size_t imax, real_t fraction, real_t amplitude, real_t tmax)
 {
-        bbreal m = _data[imax];
+        real_t m = _data[imax];
         if (amplitude) m = amplitude;
-        for (bbsize i = imax; i < _nsamples; ++i) {
+        for (size_t i = imax; i < _nsamples; ++i) {
                 if (_data[i] / m < fraction) {
                         return i - (m * fraction - _data[i]) / (_data[i - 1] - _data[i]) - tmax;
                 }

@@ -1,4 +1,4 @@
-#include "Pulse.h"
+#include "pulse.h"
 
 #include <iostream>
 #include <fstream>
@@ -17,11 +17,11 @@
 typedef struct {
         int32_t detid;
         Int_t  nsamples;
-        daqint * data;
+        bb::daqint_t * data;
+        Double_t ts;
 } Event;
 
 Event  _e;
-//size_t _ipulse;
 
 void set_branches(TTree * t)
 {
@@ -29,7 +29,7 @@ void set_branches(TTree * t)
         // handle variable size array
         // allocate maximum dimension (cf. TTreePlayer::MakeClass code)
         TLeaf * l = t->GetLeaf("nsamples", "nsamples");
-        _e.data = (daqint *)calloc(l->GetMaximum(), sizeof(daqint));
+        _e.data = (bb::daqint_t *)calloc(l->GetMaximum(), sizeof(bb::daqint_t));
         t->SetBranchAddress("raw_pulse", _e.data);
         /////t->SetBranchAddress("amplitude", &_e.ampl);
         /////t->SetBranchAddress("baseline", &_e.bl);
@@ -38,6 +38,8 @@ void set_branches(TTree * t)
         /////t->SetBranchAddress("t_start_daq", &_e.t_start_daq);
         /////t->SetBranchAddress("pu", &_e.pu);
         t->SetBranchAddress("nsamples", &_e.nsamples);
+        t->SetBranchAddress("detid", &_e.detid);
+        t->SetBranchAddress("time", &_e.ts);
         //return br;
 }
 
@@ -85,15 +87,15 @@ int main()
                 t->GetEntry(ien);
                 // select only one channel
                 if (_e.detid != 5) continue;
-                Pulse p(_e.nsamples);
-                p.setData(_e.data);
+                bb::pulse p(_e.nsamples);
+                p.set_data(_e.data);
                 /*
                 h_ampl_raw->Fill(_e.ampl);
                 */
                 // signal analysis
                 h_ped_raw->Fill(p.average(0, 50));
-                p.preProcess(100);
-                //p.printData(std::cerr);
+                p.pre_process(100);
+                //p.print_data(std::cerr);
                 float ped = p.average(0, 50);
                 float ped_rms = p.rms(0, 50);
                 h_ped->Fill(ped);
@@ -109,16 +111,17 @@ int main()
                         //getchar();
                         ++ipulse;
                 }
-                auto res = p.maximum(100, p.nSamples());
+                auto res = p.maximum(100, p.n_samples());
                 size_t iM = res.first;
                 float M = res.second;
-                res = p.maximum_fitted(100, p.nSamples());
+                res = p.maximum_fitted(100, p.n_samples());
                 float fiM = res.first;
                 float fM = res.second;
                 h_ampl->Fill(fM);
+                std::cerr << "--> " << iM << " " << M << " " << fiM << " " << fM << "\n";
+                float ft_daq = _e.ts + fiM;
+                float trise = p.rise_time_interpolated(iM, 0.05, fM, fiM) - p.rise_time_interpolated(iM, 0.95, fM, fiM);
                 /*
-                float ft_daq = _e.t_max_daq - (_e.t_max - iM);
-                float trise = signal_rise_time_interpolated(fata, iM, 0.05, fM, fiM) - signal_rise_time_interpolated(fata, iM, 0.95, fM, fiM);
                 float tdecay = signal_decay_time_interpolated(fata, iM, 0.20, fM, fiM) - signal_decay_time_interpolated(fata, iM, 0.95, fM, fiM);
                 fprintf(stdout, "%f %f %lu %u %u %lu %lu %f %f %f %f %f %f\n",
                         _e.ampl, M, iM, _e.t_max, _e.t_max_daq, 
@@ -159,8 +162,7 @@ int main()
                                 p_average_signal->Fill(is - (fiM - 450), fata[is] / fM);
                         }
                 }
-                ++_ipulse;
-                */
+*/
                 ++totpulse;
         }
         ofs.close();

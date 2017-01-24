@@ -1,49 +1,52 @@
 #ifndef PULSE_H
 #define PULSE_H
 /*
- *        Class: Pulse
+ *        Class: pulse
  *  Description: handling of sample and basic properties
  *       Author: Federico Ferri, CEA/Saclay
  */
-#include "Types.h"
+#include "types.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 
-class Pulse
-{
-        public:
-                Pulse(bbsize nsamples, const daqint * data = 0);
+namespace bb {
 
-                ~Pulse();
+        class pulse
+        {
+                public:
+                        pulse(size_t nsamples, const daqint_t * data = 0);
 
-                bbreal * data() { return _data; }
-                //void print(FILE * fd);
-                void printData(std::ostream & os);
-                void inspect(std::ostream & os);
+                        ~pulse();
 
-                void setData(const daqint * data);
-                //void copyData(daqint * data) { }
+                        real_t * data() { return _data; }
+                        //void print(FILE * fd);
+                        void print_data(std::ostream & os);
+                        void inspect(std::ostream & os);
 
-                void preProcess(bbsize ped_samples);
+                        void set_data(const daqint_t * data);
+                        //void copyData(daqint_t * data) { }
 
-                bbsize nSamples() { return _nsamples; };
+                        void pre_process(size_t ped_samples);
 
-                // pulse analysis
-                bbreal average(bbsize start, bbsize size);
-                bbreal rms(bbsize start, bbsize size);
-                std::pair<bbreal, bbreal> maximum(bbsize start, bbsize size);
-                std::pair<bbreal, bbreal> maximum_fitted(bbsize start, bbsize size);
-                bbreal decay_time(bbsize imax, bbreal fraction);
-                bbreal rise_time(bbsize imax, bbreal fraction);
-                bbreal rise_time_interpolated(bbsize imax, bbreal fraction, bbreal amplitude, bbreal tmax);
-                bbreal decay_time_interpolated(bbsize imax, bbreal fraction, bbreal amplitude, bbreal tmax);
+                        size_t n_samples() { return _nsamples; };
 
-        private:
-                bbsize _nsamples;
-                bbreal * _data;
-                bbreal  * _fata;
-};
+                        // pulse analysis
+                        real_t average(size_t start, size_t size);
+                        real_t rms(size_t start, size_t size);
+                        std::pair<real_t, real_t> maximum(size_t start, size_t size);
+                        std::pair<real_t, real_t> maximum_fitted(size_t start, size_t size);
+                        real_t decay_time(size_t imax, real_t fraction);
+                        real_t rise_time(size_t imax, real_t fraction);
+                        real_t rise_time_interpolated(size_t imax, real_t fraction, real_t amplitude, real_t tmax);
+                        real_t decay_time_interpolated(size_t imax, real_t fraction, real_t amplitude, real_t tmax);
+
+                private:
+                        size_t _nsamples;
+                        real_t * _data;
+        };
+
+}
 
 #endif
