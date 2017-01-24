@@ -10,7 +10,8 @@ Analysis framework for double beta decay bolometers
 #### Steps:
 
 ```
-git clone git@github.com:ferriff/bebe.git # or, if no github account `git clone https://github.com/ferriff/bebe.git'
+git clone git@github.com:ferriff/bebe.git
+# or, if no github account `git clone https://github.com/ferriff/bebe.git'
 cd bebe
 cmake .
 make
@@ -30,7 +31,7 @@ already there.
    * `.h` suffix for headers, `.cc` for implementation and analysis code
    * 8 space indentation (no TABs)
    * example snapshot
-     ```C++
+```C++
 size_t fignal_rise_time(const float data[], size_t imax, float fraction)
 {
         float m = data[imax];
@@ -39,4 +40,4 @@ size_t fignal_rise_time(const float data[], size_t imax, float fraction)
         }
         return 0;
 }
-     ```
+```
