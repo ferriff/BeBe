@@ -1,22 +1,28 @@
 #include <cstdio>
 
 #include "TF1.h"
-#include "TH1F.h"
 #include "TFile.h"
 #include "TFitResult.h"
 #include "TGraph.h"
+#include "TH1F.h"
+#include "TLeaf.h"
+#include "TProfile.h"
 #include "TTree.h"
 
 #define TIME_WINDOW 2000
 #define PRE_TRIGGER  400
-#define PED_SAMPLES   50
+#define PED_SAMPLES  100
 
 typedef struct {
-        int32_t data[TIME_WINDOW];
+        int32_t detid;
         float   ampl;
+        float   bl;
         UInt_t  t_max;
         UInt_t  t_max_daq;
         UInt_t  t_start_daq;
+        UInt_t  pu;
+        UInt_t  nsamples;
+        int32_t * data;
 } Event;
 
 Event  _e;
@@ -24,11 +30,20 @@ size_t _ipulse;
 
 void set_branches(TTree * t)
 {
-        t->SetBranchAddress("raw_signal", &_e.data);
+        t->SetBranchAddress("detid", &_e.detid);
+        // handle variable size array
+        // allocate maximum dimension (cf. TTreePlayer::MakeClass code)
+        TLeaf * l = t->GetLeaf("nsamples", "nsamples");
+        _e.data = (int32_t *)calloc(l->GetMaximum(), sizeof(int32_t));
+        t->SetBranchAddress("raw_signal", _e.data);
         t->SetBranchAddress("amplitude", &_e.ampl);
+        t->SetBranchAddress("baseline", &_e.bl);
         t->SetBranchAddress("t_max", &_e.t_max);
         t->SetBranchAddress("t_max_daq", &_e.t_max_daq);
         t->SetBranchAddress("t_start_daq", &_e.t_start_daq);
+        t->SetBranchAddress("pu", &_e.pu);
+        t->SetBranchAddress("nsamples", &_e.nsamples);
+        //return br;
 }
 
 
@@ -180,15 +195,16 @@ int main()
         _ipulse = 0;
         TFile * fout = TFile::Open("histos.root", "recreate");
         TH1F * h_ampl_raw               = new TH1F("h_raw_ampl", "h_raw_ampl", 2<<17, 0., 2<<17);
-        TH1F * h_ampl                   = (TH1F*)h_ampl_raw->Clone("h_ampl");
-        TH1F * h_ampl_drift_corr        = (TH1F*)h_ampl_raw->Clone("h_ampl_drift_corr");
-        TH1F * h_ampl_heater            = (TH1F*)h_ampl_raw->Clone("h_ampl_heater");
-        TH1F * h_ampl_heater_drift_corr = (TH1F*)h_ampl_raw->Clone("h_ampl_heater_drift_corr");
-        TH1F * h_ampl_keV               = new TH1F("h_ampl_keV", "h_ampl_keV", 4000, 0., 10000.);
-        TH1F * h_ped                    = new TH1F("h_ped", "h_ped", 2<<13, 0., 2<<17);
-        TH1F * h_ped_rms                = new TH1F("h_ped_rms", "h_ped_rms", 100, 0., 100.);
-        TH1F * h_dt                     = new TH1F("h_dt", "h_dt", 5000, 0., 5000000.);
-        TH1F * h_time_s1                = new TH1F("h_time_s1", "h_time_s1", 20000, 0., 50.);
+        TH1F     * h_ampl                   = (TH1F*)h_ampl_raw->Clone("h_ampl");
+        TH1F     * h_ampl_drift_corr        = (TH1F*)h_ampl_raw->Clone("h_ampl_drift_corr");
+        TH1F     * h_ampl_heater            = (TH1F*)h_ampl_raw->Clone("h_ampl_heater");
+        TH1F     * h_ampl_heater_drift_corr = (TH1F*)h_ampl_raw->Clone("h_ampl_heater_drift_corr");
+        TH1F     * h_ampl_keV               = new TH1F("h_ampl_keV", "h_ampl_keV", 4000, 0., 10000.);
+        TH1F     * h_ped                    = new TH1F("h_ped", "h_ped", 2<<13, 0., 2<<17);
+        TH1F     * h_ped_rms                = new TH1F("h_ped_rms", "h_ped_rms", 100, 0., 100.);
+        TH1F     * h_dt                     = new TH1F("h_dt", "h_dt", 5000, 0., 5000000.);
+        TH1F     * h_time_s1                = new TH1F("h_time_s1", "h_time_s1", 20000, 0., 50.);
+        TProfile * p_average_signal         = new TProfile("p_average_signal", "p_average_signal", 5. * TIME_WINDOW, 0., TIME_WINDOW);
         TGraph * g_ampl_vs_t            = new TGraph();
         g_ampl_vs_t->SetNameTitle("g_ampl_vs_t", "g_ampl_vs_t");
         gDirectory->Add(g_ampl_vs_t);
@@ -205,11 +221,10 @@ int main()
         Long64_t nentries = t->GetEntries();
         Long64_t gcnt = 0, gcnt2 = 0, gcnta = 0;
         UInt_t otmaxdaq = 1;
-        float fata[TIME_WINDOW];
+        float fata[TIME_WINDOW]; // FIXME
         FILE * fp = fopen("pulses.dat", "w");
         for (Long64_t ien = 0; ien < nentries; ++ien) {
                 t->GetEntry(ien);
-                //fprintf(stderr, "%f %u\n", _e.ampl, _e.t_max_daq);
                 h_ampl_raw->Fill(_e.ampl);
                 // signal analysis
                 signal_convert(_e.data, fata);
@@ -257,8 +272,16 @@ int main()
                         }
                         fprintf(fp, "\n\n");
                 }
+                if (_e.pu == 0 && fM > 101e+3 && fM < 101.75e+3 && ien > 750 && ien < 1000) {
+                        for (size_t is = 0; is < TIME_WINDOW; ++is) {
+                                //fprintf(stderr, "--> %lu %lu %f %f %f\n", is, iM, fiM, fata[is], fM );
+                                //if (is % 100 == 0) getchar();
+                                p_average_signal->Fill(is - (fiM - 450), fata[is] / fM);
+                        }
+                }
                 ++_ipulse;
         }
+        if (_e.data) free(_e.data);
         h_ampl_drift_corr->Rebin(16);
         h_ampl_heater->Rebin(6);
         h_ampl_heater_drift_corr->Rebin(6);
