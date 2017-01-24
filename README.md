@@ -1,4 +1,4 @@
-# BeBe: analysis framework for double beta decay bolometers
+# bebe: analysis framework for double beta decay bolometers
 
 ### Installation instructions
 
@@ -7,8 +7,8 @@
 
 #### Steps:
 ```
-git clone git@github.com:ferriff/BeBe.git # or, if no github account `git clone https://github.com/ferriff/BeBe.git'
-cd BeBe
+git clone git@github.com:ferriff/BeBe.git # or, if no github account `git clone https://github.com/ferriff/bebe.git'
+cd bebe
 cmake .
 make
 ```

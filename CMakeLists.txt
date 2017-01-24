@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4.3 FATAL_ERROR)
-project (BeBe)
+project (bebe)
 
 include_directories ("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${ROOTSYS}/include")
