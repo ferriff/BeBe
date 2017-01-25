@@ -1,6 +1,6 @@
 #include "pulse.h"
 
-#include <math.h>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 
@@ -121,7 +121,7 @@ int main()
                 float ft_daq = _e.ts + fiM; // in seconds
                 float trise = p.rise_time_interpolated(iM, 0.05, fM, fiM) - p.rise_time_interpolated(iM, 0.95, fM, fiM);
                 float tdecay = p.decay_time_interpolated(iM, 0.20, fM, fiM) - p.decay_time_interpolated(iM, 0.95, fM, fiM);
-                if(!(isnan(trise) || isnan(tdecay))) {
+                if(!(std::isnan(trise) || std::isnan(tdecay))) {
                         g_decay_vs_rise->SetPoint(gcnt_rd++, trise, tdecay);
                 }
                 /*
