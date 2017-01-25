@@ -14,8 +14,8 @@
 bb::data_reader::data_reader(const char * output_file_name)
 {
         _fout = TFile::Open(output_file_name, "recreate");
-        if (!_fout) {
-                fprintf(stderr, "[bb::data_reader::data_reader] problems in opening output file `%s', aborting\n", output_file_name);
+        if (!_fout || _fout->IsZombie()) {
+                fprintf(stderr, "[bb::data_reader::data_reader] problems in opening output file `%s', aborting.\n", output_file_name);
                 exit(-1);
         }
         // declare ntuple
@@ -33,19 +33,19 @@ bb::data_reader::data_reader(const char * output_file_name)
 
 bb::data_reader::~data_reader()
 {
-        _t->Write(NULL, TObject::kWriteDelete);
-        _fout->Close();
+        if (_t) _t->Write(NULL, TObject::kWriteDelete);
+        if (_fout) _fout->Close();
 }
 
 
 void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
 {
-        fprintf(stdout, "# Reading file `%s'\n", input_file_name);
         FILE * fd = fopen(input_file_name, "r");
         if (!fd) {
                 fprintf(stderr, "[bb::data_reader::read_streamer_mode_file] Cannot open file `%s'. Abort.", input_file_name);
-                exit(3);
+                return;
         }
+        fprintf(stdout, "# Reading file `%s'\n", input_file_name);
 	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
@@ -78,7 +78,7 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
         if (_ndetids && _ndetids != detids.size()) {
                 fprintf(stderr, "[bb::data_reader::readFile] Error: the header of `%s' is inconsistent with the previous ones:\n", input_file_name);
                 fprintf(stderr, "[bb::data_reader::readFile] ... found %lu detectors instead of %lu, aborting.\n", detids.size(), _ndetids);
-                exit(2);
+                return;
         }
         _ndetids = detids.size();
 
