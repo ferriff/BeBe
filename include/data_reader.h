@@ -20,7 +20,11 @@ namespace bb {
 
                         ~data_reader();
 
+                        size_t n_samples() const { return _nsamples; }
+                        void set_n_samples(size_t ns) { _nsamples = ns; }
+
                         void read_streamer_mode_file(const char * input_file_name);
+                        void read_trigger_mode_file(const char * heat_data_file, const char * light_data_file, const char * trigger_file);
 
                 private:
                         TTree * _t;

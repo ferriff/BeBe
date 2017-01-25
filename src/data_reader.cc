@@ -43,7 +43,7 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
         fprintf(stdout, "# Reading file `%s'\n", input_file_name);
         FILE * fd = fopen(input_file_name, "r");
         if (!fd) {
-                fprintf(stderr, "[bb::data_reader::readStreamerModeFile] Cannot open file `%s'. Abort.", input_file_name);
+                fprintf(stderr, "[bb::data_reader::read_streamer_mode_file] Cannot open file `%s'. Abort.", input_file_name);
                 exit(3);
         }
 	char * line = NULL;
@@ -113,5 +113,63 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
         }
         for (size_t i = 0; i < _ndetids; ++i) {
                 free(data[i]);
+        }
+}
+
+
+void bb::data_reader::read_trigger_mode_file(const char * heat_data_file, const char * light_data_file, const char * trigger_file)
+{
+        FILE * fd_heat = fopen(heat_data_file, "r");
+        if (!fd_heat) {
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.", heat_data_file);
+                exit(3);
+        }
+        FILE * fd_light = fopen(light_data_file, "r");
+        if (!fd_light) {
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.", light_data_file);
+                exit(3);
+        }
+        FILE * fd_trigger = fopen(trigger_file, "r");
+        if (!fd_trigger) {
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.", trigger_file);
+                exit(3);
+        }
+        fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Number of samples set to %lu. Make sure it is the correct one for the file read.", _nsamples);
+
+        daqint_t * data;
+        data = (daqint_t *)calloc(_nsamples, sizeof(daqint_t));
+        daqint_t sample;
+
+        char * line = NULL;
+        size_t len = 0;
+        ssize_t read;
+        size_t is = 0;
+
+        while ( (read = getline(&line, &len, fd_trigger)) != -1 ) {
+                if (line[0] == '#') continue;
+                sscanf(line, "%*d %*f %*f %d %lf", &_detid, &_time);
+                // read and fill heat
+                for (size_t i = 0; i < _nsamples; ++i) {
+                        fread(&sample, sizeof(daqint_t), 1, fd_heat);
+                        data[i] = (Int_t)sample;
+                        //sample = bswap(sample);
+                }
+                _t->Fill();
+                // read and fill light
+                _detid += 1000;
+                for (size_t i = 0; i < _nsamples; ++i) {
+                        fread(&sample, sizeof(daqint_t), 1, fd_light);
+                        data[i] = (Int_t)sample;
+                        //sample = bswap(sample);
+                }
+                _t->Fill();
+                ++is;
+        }
+        if (data) free(data);
+        if (fread(&sample, sizeof(daqint_t), 1, fd_heat) != 0 || fread(&sample, sizeof(daqint_t), 1, fd_light) != 0) {
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] ERROR: data"
+                                " files seem to contain more events than"
+                                " trigger file, abort\n");
+                exit(1);
         }
 }
