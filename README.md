@@ -28,6 +28,25 @@ Whenever a new file is added, remember to update `src/CMakeLists.txt`
 and/or `bin/CMakeLists.txt` accordingly. Follow the example of what
 already there.
 
+
+##### compile an analysis code
+
+Make sure the file `bin/CMakeLists.txt` is up-to-date and contains
+instructions for building the analysis code you want to run and simply do
+```
+make
+```
+from within the project directory or its sub-directories.
+
+##### run an analysis code
+
+Launch them as standard executables, e.g.
+```
+bin/exe_name
+```
+or `./exe_name` if you are already in the `bin/` directory.
+
+
 ### Minimal coding rules:
    * `.h` suffix for headers, `.cc` for implementation and analysis code
    * 8 space indentation (no TABs)
