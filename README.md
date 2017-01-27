@@ -29,7 +29,7 @@ and/or `bin/CMakeLists.txt` accordingly. Follow the example of what
 already there.
 
 
-##### compile an analysis code
+#### Compile an analysis code
 
 Make sure the file `bin/CMakeLists.txt` is up-to-date and contains
 instructions for building the analysis code you want to run and simply do
@@ -38,7 +38,7 @@ make
 ```
 from within the project directory or its sub-directories.
 
-##### run an analysis code
+#### Run an analysis code
 
 Launch them as standard executables, e.g.
 ```
