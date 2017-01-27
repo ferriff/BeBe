@@ -4,11 +4,11 @@ Analysis framework for double beta decay bolometers
 
 ### Installation instructions
 
-##### Requirements:
+#### Requirements:
    * `CMake` package (>= 3.4.3), see https://cmake.org/
    * `ROOT` package, see http://root.cern.ch
 
-##### Steps:
+#### Steps:
 
 ```
 git clone git@github.com:ferriff/bebe.git
