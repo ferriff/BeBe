@@ -42,7 +42,7 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
 {
         FILE * fd = fopen(input_file_name, "r");
         if (!fd) {
-                fprintf(stderr, "[bb::data_reader::read_streamer_mode_file] Cannot open file `%s'. Abort.", input_file_name);
+                fprintf(stderr, "[bb::data_reader::read_streamer_mode_file] Cannot open file `%s'. Abort.\n", input_file_name);
                 return;
         }
         fprintf(stdout, "# Reading file `%s'\n", input_file_name);
@@ -121,23 +121,24 @@ void bb::data_reader::read_trigger_mode_file(const char * heat_data_file, const 
 {
         FILE * fd_heat = fopen(heat_data_file, "r");
         if (!fd_heat) {
-                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.", heat_data_file);
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.\n", heat_data_file);
                 exit(3);
         }
         FILE * fd_light = fopen(light_data_file, "r");
         if (!fd_light) {
-                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.", light_data_file);
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.\n", light_data_file);
                 exit(3);
         }
         FILE * fd_trigger = fopen(trigger_file, "r");
         if (!fd_trigger) {
-                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.", trigger_file);
+                fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.\n", trigger_file);
                 exit(3);
         }
-        fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Number of samples set to %lu. Make sure it is the correct one for the file read.", _nsamples);
+        fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Number of samples set to %lu. Make sure it is the correct one for the file read.\n", _nsamples);
 
         daqint_t * data;
         data = (daqint_t *)calloc(_nsamples, sizeof(daqint_t));
+        _br->SetAddress(data);
         daqint_t sample;
 
         char * line = NULL;
@@ -151,16 +152,16 @@ void bb::data_reader::read_trigger_mode_file(const char * heat_data_file, const 
                 // read and fill heat
                 for (size_t i = 0; i < _nsamples; ++i) {
                         fread(&sample, sizeof(daqint_t), 1, fd_heat);
-                        data[i] = (Int_t)sample;
                         //sample = bswap(sample);
+                        data[i] = sample;
                 }
                 _t->Fill();
                 // read and fill light
                 _detid += 1000;
                 for (size_t i = 0; i < _nsamples; ++i) {
                         fread(&sample, sizeof(daqint_t), 1, fd_light);
-                        data[i] = (Int_t)sample;
                         //sample = bswap(sample);
+                        data[i] = sample;
                 }
                 _t->Fill();
                 ++is;
