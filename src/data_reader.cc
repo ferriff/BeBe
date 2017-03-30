@@ -18,23 +18,83 @@ bb::data_reader::data_reader(const char * output_file_name)
                 fprintf(stderr, "[bb::data_reader::data_reader] problems in opening output file `%s', aborting.\n", output_file_name);
                 exit(-1);
         }
-        // declare ntuple
-        _t = new TTree("ntu", "ntu");
-        _t->Branch("nsamples", &_nsamples, "nsamples/I");
+        _fout->mkdir("MetaData");
+        _fout->mkdir("Data");
+}
+
+
+void bb::data_reader::init_tree(const char * name)
+{
+        // init ntuple
+        _fout->cd("Data");
+        _t.emplace_back(new TTree(name, name));
+        TTree * t = _t.back();
+        t->Branch("nsamples", &_nsamples, "nsamples/I");
         char tmp[64];
         sprintf(tmp, "raw_pulse[nsamples]/S");
-        _br = _t->Branch("raw_pulse", (void *)0, tmp);
-        _t->Branch("detid", &_detid, "detid/I");
-        _t->Branch("time", &_time, "time/D");
-        _t->Branch("freq", &_freq, "freq/D");
+        _br.emplace_back(t->Branch("raw_pulse", (void *)0, tmp));
+        t->Branch("detid", &_detid, "detid/I");
+        t->Branch("time", &_time, "time/D");
+        t->Branch("freq", &_freq, "freq/D");
         _time = 0;
+        _fout->cd();
+}
+
+
+void bb::data_reader::add_intra_tree_info()
+{
+        if (!_ndetids) {
+                fprintf(stderr, "[bb::data_reader::add_intra_tree_info] Error: no detids found, make sure to call this function after the header has been parsed correctly.\n");
+        }
+        char tmp[64];
+        sprintf(tmp, "event_ids[%lu]", _ndetids);
+        for (auto t : _t) {
+                t->Branch(tmp, _event_ids, (std::string(tmp) + "/L").c_str());
+        }
+}
+
+
+void bb::data_reader::copy_data(size_t idx, daqint_t * d1, daqint_t * d2)
+{
+        std::copy(d1 + idx, d1 + _nsamples, d2);
+        std::copy(d1, d1 + idx, d2 + (_nsamples - idx));
 }
 
 
 bb::data_reader::~data_reader()
 {
-        if (_t) _t->Write(NULL, TObject::kWriteDelete);
+        _fout->cd("Data");
+        for (auto t : _t) {
+                if (t) t->Write(NULL, TObject::kWriteDelete);
+        }
+        _fout->cd();
         if (_fout) _fout->Close();
+        if (_event_ids) delete _event_ids;
+}
+
+
+bool bb::data_reader::trigger_over_threshold(daqint_t * data, size_t idx)
+{
+        return data[idx] > 1000;
+}
+
+
+bool bb::data_reader::trigger_over_threshold_with_baseline(daqint_t * data, size_t idx)
+{
+        size_t nped = _nsamples / 100;
+        int start = (idx - nped);
+        start = start > 0 ? start : _nsamples + start;
+        float mean = 0;
+        for (size_t i = 0; i < nped; ++i) mean += data[(start + i) % _nsamples];
+        mean /= nped;
+        //fprintf(stderr, "# mean: %f %d\n", mean, data[idx]);
+        return data[idx] - mean > 1000;
+}
+
+
+bool bb::data_reader::trigger(daqint_t * data, size_t idx)
+{
+        trigger_over_threshold_with_baseline(data, idx);
 }
 
 
@@ -52,6 +112,7 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
 
         // read and parse header
         std::vector<int> detids;
+        std::vector<std::string> detid_names;
         std::string header = "";
         char dname[128];
         _freq = 0;
@@ -59,6 +120,10 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
                 header += line;
                 if (sscanf(line, "* Detecteur %s", &dname[0]) == 1) {
                         fprintf(stderr, "# New detector: `%s' --> ", dname);
+                        if (_first_file) {
+                                init_tree((std::string(dname) + "_heat").c_str());
+                                init_tree((std::string(dname) + "_light").c_str());
+                        }
                 }
                 if (sscanf(line, "Bolo.position = %x", &_detid) == 1) {
                         fprintf(stderr, "%d (detid, aka Bolo.position)\n", _detid);
@@ -76,31 +141,111 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
                 }
         }
         if (_ndetids && _ndetids != detids.size()) {
-                fprintf(stderr, "[bb::data_reader::readFile] Error: the header of `%s' is inconsistent with the previous ones:\n", input_file_name);
-                fprintf(stderr, "[bb::data_reader::readFile] ... found %lu detectors instead of %lu, aborting.\n", detids.size(), _ndetids);
+                fprintf(stderr, "[bb::data_reader::read_streamer_mode_file] Error: the header of `%s' is inconsistent with the previous ones:\n", input_file_name);
+                fprintf(stderr, "[bb::data_reader::read_streamer_mode_file] ... found %lu detectors instead of %lu, aborting.\n", detids.size(), _ndetids);
                 return;
         }
         _ndetids = detids.size();
+        _event_ids = (Long64_t *)calloc(_ndetids, sizeof(Long64_t));
+        if (_first_file) add_intra_tree_info();
 
-        _fout->cd();
+        // write header information in the output file
+        _fout->cd("MetaData");
         TObjString os(header.c_str());
         char tmp[512];
         sprintf(tmp, "%s", input_file_name);
         std::string ttmp(basename(tmp));
         std::replace(ttmp.begin(), ttmp.end(), '/', '-');
         os.Write(("header_" + ttmp).c_str());
+        _fout->cd();
+
+        // write the ordering of the trees, to reconstruct the association
+        //    position in the vector of indices <-> tree
+        _fout->cd("MetaData");
+        _fout->cd();
 
 	// declare ntuple variables
         daqint_t * data[_ndetids];
         for (size_t i = 0; i < _ndetids; ++i) {
                 data[i] = (daqint_t *)calloc(_nsamples, sizeof(daqint_t));
         }
+        daqint_t cdata[_nsamples];
+        daqint_t sample;
 
         // read data and fill the ntuple
-        daqint_t sample;
-        int cnt = 0;
+        //  1)  fill an array of data
+        //      det1 sample1, s2, s3, ..., s_nsamples
+        //      ...                               ...
+        //      detN sample1, s2, s3, ..., s_nsamples
+        //  2)  if the sample S for the detector D is above a trigger threshold
+        //      then
+        //        . write the event in the corresponding tree
+        //        . write the tree indices of the previous events of all the
+        //          other trees (to ease navigation)
+        size_t ntot = _ndetids * _nsamples;
+
+        // to hold the last triggered sample
+        Long64_t trg[_ndetids];
+        for (auto i = 0; i < _ndetids; ++i) trg[i] = 0;
+
+        // read an array of ndetids_
         while (fread(&sample, sizeof(daqint_t), 1, fd)) {
-                if (cnt / (_ndetids * _nsamples) && cnt % (_ndetids * _nsamples) == 0) {
+                // start looking for triggers when the array is fully filled
+                // from 1/3 of the array, i.e. the first 1/3 is kept for
+                // the pre-samples
+                if (_cnt > ntot) {
+                        // if sample above trigger threshold
+                        // and outside the trigger window, save the event
+                        // in the tree of the corresponding detid
+                        size_t idetid = _cnt % _ndetids;
+                        //if (idetid == 10) {
+                                fprintf(stderr, "%d %c\n", sample, (char)sample);
+                        //}
+                        // divide _nsamples in 3 equal parts:
+                        // 1. pre-samples (no triggers searched for)
+                        // 2. one and only one trigger allowed
+                        // 3. post-samples (new triggers allowed)
+                        size_t pre_samples = _nsamples / 3;
+                        size_t core_samples = _nsamples / 3;
+                        // start looking for triggers from idx
+                        size_t idx = (_cnt / _ndetids + pre_samples) % _nsamples;
+                        if (idetid == 10 && trigger(data[idetid], idx) && (_cnt / _ndetids - trg[idetid]) > core_samples) {
+                                fprintf(stderr, "# Copying data: %lu --> %lu %lu    %d  %lu %lld\n", _cnt, idetid, idx, sample, _cnt / _ndetids, trg[idetid]);
+                                trg[idetid] = _cnt / _ndetids;
+                                int start = (idx - pre_samples);
+                                bzero(cdata, sizeof(cdata));
+                                copy_data(start > 0 ? start : _nsamples + start, data[idetid], cdata);
+                                //if (idetid == 6) {
+                                //        for (size_t i = 0; i < _nsamples; ++i)
+                                //        {
+                                //                fprintf(stderr, "%lu %d %d\n", i, data[idetid][i], cdata[i]);
+                                //        }
+                                //        fprintf(stderr, "\n\n");
+                                //}
+                                _br[idetid]->SetAddress(cdata);
+                                _detid = detids[idetid];
+                                _t[idetid]->Fill();
+                                ++_event_ids[idetid];
+                        }
+                        //// keep track of the time
+                        //_time += (Double_t)_nsamples / _freq;
+                }
+                // keep track of the time
+                _time = (Double_t)(_cnt / _ndetids) / _freq;
+                // fill the data array
+                data[_cnt % _ndetids][(_cnt / _ndetids) % _nsamples] = sample;
+                ++_cnt;
+        }
+        for (size_t i = 0; i < _ndetids; ++i) {
+                free(data[i]);
+        }
+
+        /*
+        // read data and fill the ntuple
+        daqint_t sample;
+        int _cnt = 0;
+        while (fread(&sample, sizeof(daqint_t), 1, fd)) {
+                if (_cnt / (_ndetids * _nsamples) && _cnt % (_ndetids * _nsamples) == 0) {
                         for (size_t i = 0; i < _ndetids; ++i) {
                                 _br->SetAddress(data[i]);
                                 _detid = detids[i];
@@ -108,17 +253,20 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
                         }
                         _time += (Double_t)_nsamples / _freq;
                 }
-                data[cnt % _ndetids][(cnt / _ndetids) % _nsamples] = sample;
-                ++cnt;
+                data[_cnt % _ndetids][(_cnt / _ndetids) % _nsamples] = sample;
+                ++_cnt;
         }
         for (size_t i = 0; i < _ndetids; ++i) {
                 free(data[i]);
         }
+        */
+        _first_file = false;
 }
 
 
 void bb::data_reader::read_trigger_mode_file(const char * heat_data_file, const char * light_data_file, const char * trigger_file)
 {
+        /*
         FILE * fd_heat = fopen(heat_data_file, "r");
         if (!fd_heat) {
                 fprintf(stderr, "[bb::data_reader::read_trigger_mode_file] Cannot open file `%s'. Abort.\n", heat_data_file);
@@ -173,4 +321,5 @@ void bb::data_reader::read_trigger_mode_file(const char * heat_data_file, const 
                                 " trigger file, abort\n");
                 exit(1);
         }
+        */
 }

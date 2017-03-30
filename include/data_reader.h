@@ -2,7 +2,7 @@
 #define DATA_READER_H
 /*
  *        Class: data_reader
- *  Description: handling of SAMBA binarary file in streamer mode
+ *  Description: handling of SAMBA binarary file in trigger and streamer mode
  *       Author: Federico Ferri, CEA/Saclay
  */
 #include "types.h"
@@ -27,15 +27,27 @@ namespace bb {
                         void read_trigger_mode_file(const char * heat_data_file, const char * light_data_file, const char * trigger_file);
 
                 private:
-                        TTree * _t;
-                        TBranch * _br;
+
+                        void init_tree(const char * name);
+                        void add_intra_tree_info();
+                        void copy_data(size_t idx, daqint_t * d1, daqint_t * d2);
+
+                        bool trigger(daqint_t * data, size_t idx);
+                        bool trigger_over_threshold(daqint_t * data, size_t idx);
+                        bool trigger_over_threshold_with_baseline(daqint_t * data, size_t idx);
+
+                        std::vector<TTree *> _t;
+                        std::vector<TBranch *> _br;
                         TFile * _fout;
                         FILE *  _fd;
-                        size_t _nsamples = 1000;
+                        size_t _nsamples = 3000;
                         size_t _ndetids = 0;
+                        size_t _cnt = 0;
                         int32_t _detid;
                         Double_t _time;
                         Double_t _freq;
+                        Long64_t * _event_ids;
+                        bool _first_file = true;
         };
 
 }
