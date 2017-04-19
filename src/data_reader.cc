@@ -28,8 +28,9 @@ void bb::data_reader::init_tree(const char * name)
         // init ntuple
         _fout->cd("Data");
         _t.emplace_back(new TTree(name, name));
+        _tree_order.push_back(name);
         TTree * t = _t.back();
-        t->Branch("nsamples", &_nsamples, "nsamples/I");
+        t->Branch("nsamples", &_nsamples, "nsamples/s");
         char tmp[64];
         sprintf(tmp, "raw_pulse[nsamples]/S");
         _br.emplace_back(t->Branch("raw_pulse", (void *)0, tmp));
@@ -55,15 +56,16 @@ void bb::data_reader::add_intra_tree_info()
 
 void bb::data_reader::add_meta_data_info()
 {
-        size_t cnt = 0;
-        std::vector<std::string> tnames;
-        for (auto t : _t) {
-                tnames.push_back(t->GetName());
-        }
+        //size_t cnt = 0;
+        //std::vector<std::string> tnames;
+        //for (auto t : _t) {
+        //        tnames.push_back(t->GetName());
+        //}
         auto dir = gDirectory->GetPath();
         _fout->cd("MetaData");
         TTree * meta_data = new TTree("meta", "meta");
-        meta_data->Branch("tree_order", &tnames);
+        //meta_data->Branch("tree_order", &tnames);
+        meta_data->Branch("tree_order", &_tree_order);
         meta_data->Fill();
         meta_data->Write();
         delete meta_data;
@@ -170,14 +172,14 @@ void bb::data_reader::read_streamer_mode_file(const char * input_file_name)
                 return;
         }
 
-        // create association  detector name <-> detid
-        if (_first_file) {
-                for (size_t i = 0; i < dnames.size(); ++i) {
-                        fprintf(stderr, "--> %s %d\n", dnames[i].c_str(), detids[i]);
-                        //_detid_names.push_back(std::make_pair(dnames[i], detids[i]));
-                        _detid_names[dnames[i]] = detids[i];
-                }
-        }
+        ///FIXME// create association  detector name <-> detid
+        ///FIXMEif (_first_file) {
+        ///FIXME        for (size_t i = 0; i < dnames.size(); ++i) {
+        ///FIXME                fprintf(stderr, "--> %s %d\n", dnames[i].c_str(), detids[i]);
+        ///FIXME                //_detid_names.push_back(std::make_pair(dnames[i], detids[i]));
+        ///FIXME                _detid_names[dnames[i]] = detids[i];
+        ///FIXME        }
+        ///FIXME}
         // FIXME: add more checks on detid ordering when switching files...
 
         _ndetids = detids.size();
