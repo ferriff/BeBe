@@ -69,6 +69,12 @@ int main()
         TGraph * g_ampl_all_vs_t        = new TGraph();
         g_ampl_all_vs_t->SetNameTitle("g_ampl_all_vs_t", "g_ampl_all_vs_t");
         gDirectory->Add(g_ampl_all_vs_t);
+        TGraph * g_rise_vs_ampl        = new TGraph();
+        g_rise_vs_ampl->SetNameTitle("g_rise_vs_ampl", "g_rise_vs_ampl");
+        gDirectory->Add(g_rise_vs_ampl);
+        TGraph * g_decay_vs_ampl        = new TGraph();
+        g_decay_vs_ampl->SetNameTitle("g_decay_vs_ampl", "g_decay_vs_ampl");
+        gDirectory->Add(g_decay_vs_ampl);
         TFile * fin = TFile::Open("lsm_signals.root");
         TTree * t = (TTree*)fin->Get("ntu");
         fout->cd();
@@ -78,8 +84,9 @@ int main()
         UInt_t otmaxdaq = 1;
         FILE * fp = fopen("pulses.dat", "w");
         size_t ipulse = 0, totpulse = 1;
-        std::ofstream ofs;
+        std::ofstream ofs, pfs;
         ofs.open ("pappa.dat", std::ofstream::out);
+        pfs.open ("pippa.dat", std::ofstream::out);
         for (Long64_t ien = 0; ien < nentries; ++ien) {
                 t->GetEntry(ien);
                 // select only one channel
@@ -98,6 +105,7 @@ int main()
                 h_ped->Fill(ped);
                 h_ped_rms->Fill(ped_rms);
                 // detailed check of pulses if conditions applies
+                /*
                 if (ped_rms > 10) {
                         p.inspect(ofs);
                         ofs << "# pulse number:" << ipulse << "\n";
@@ -109,6 +117,7 @@ int main()
                         ++ipulse;
                         continue; // do not perform the rest of the analysis
                 }
+                */
                 auto res = p.maximum(100, p.n_samples());
                 size_t iM = res.first;
                 float M = res.second;
@@ -121,7 +130,22 @@ int main()
                 float ft_daq = _e.ts + fiM; // in seconds
                 float trise = p.rise_time_interpolated(iM, 0.05, fM, fiM) - p.rise_time_interpolated(iM, 0.95, fM, fiM);
                 float tdecay = p.decay_time_interpolated(iM, 0.20, fM, fiM) - p.decay_time_interpolated(iM, 0.95, fM, fiM);
-                if(!(std::isnan(trise) || std::isnan(tdecay))) {
+                if(!(std::isnan(trise) || std::isnan(tdecay)) && fM > 0) {
+                        //fprintf(stderr, "times %f %f %f\n", fM, trise, tdecay);
+                        if (trise > 30 && trise < 31 && fM > 1e4 && fM < 1.1e4) {
+                                p.inspect(ofs);
+                                ofs << "# pulse number:" << ipulse << "\n";
+                                ofs << "\n\n";
+                                ofs.flush();
+                        }
+                        if (trise < 33 && trise > 32 && fM > 1e4 && fM < 1.1e4) {
+                                p.inspect(pfs);
+                                pfs << "# pulse number:" << ipulse << "\n";
+                                pfs << "\n\n";
+                                pfs.flush();
+                        }
+                        g_rise_vs_ampl->SetPoint(gcnt_rd, fM, trise);
+                        g_decay_vs_ampl->SetPoint(gcnt_rd, fM, tdecay);
                         g_decay_vs_rise->SetPoint(gcnt_rd++, trise, tdecay);
                 }
                 /*
