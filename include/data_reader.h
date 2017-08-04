@@ -38,6 +38,8 @@ namespace bb {
                         bool trigger_over_threshold(daqint_t * data, size_t idx);
                         bool trigger_over_threshold_with_baseline(daqint_t * data, size_t idx);
 
+                        void split(char * str, std::vector<std::string> & res);
+
                         std::vector<TTree *> _t;
                         std::vector<TBranch *> _br;
                         TFile * _fout;
@@ -48,6 +50,7 @@ namespace bb {
                         int32_t _detid;
                         //std::map<std::string, int32_t> _detid_names;
                         std::vector<std::string> _tree_order;
+                        std::vector<int32_t> _detids;
                         Double_t _time;
                         Double_t _freq;
                         Long64_t * _event_ids;

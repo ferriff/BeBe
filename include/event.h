@@ -25,6 +25,7 @@ namespace bb {
                         uint_t     nsamples() const { return _nsamples; }
                         int32_t    detid() const { return _detid; }
                         Double_t   time()  const { return _time; }
+                        //Long64_t * event_ids() const { Long64_t * dest = (Long64_t*)malloc(sizeof(_event_ids)); return (Long64_t*)memcpy(dest, _event_ids, sizeof(_event_ids) / sizeof(Long64_t)); }
                         Long64_t * event_ids() const { return _event_ids; }
 
                 private:

@@ -24,6 +24,7 @@ bb::tree_reader::tree_reader(const char * filename)
 void bb::tree_reader::init_trees()
 {
         for (auto & t : _t) {
+                if (_debug) fprintf(stderr, "[bb::tree_reader::init_trees] --> %lld\n", t->GetEntries());
                 init_branches(t);
         }
 }
@@ -46,7 +47,7 @@ void bb::tree_reader::init_branches(TTree * t)
 
 bool bb::tree_reader::next_event()
 {
-        fprintf(stderr, "--> %d %u\n", _ct, _t_entry[_ct]);
+        if (_debug) fprintf(stderr, "[bb::tree_reader::next_event] --> %d %llu\n", _ct, _t_entry[_ct]);
         return read_event(_t_entry[_ct]++);
 }
 
@@ -59,7 +60,7 @@ bool bb::tree_reader::prev_event()
 
 bool bb::tree_reader::read_event(ULong64_t entry)
 {
-        fprintf(stderr, "--> %p %u\n", _t[_ct], entry);
+        if (_debug) fprintf(stderr, "[bb::tree_reader::read_event] --> %p %llu\n", _t[_ct], entry);
         return _t[_ct]->GetEntry(entry);
 }
 

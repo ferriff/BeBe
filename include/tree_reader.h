@@ -30,6 +30,13 @@ namespace bb {
                         bool prev_event();
                         bool read_event(ULong64_t entry);
 
+                        size_t detector() { return _ct; }
+                        std::string detector_name() { return (*_t_names)[_ct]; }
+
+                        size_t n_detectors() { return _t.size(); }
+
+                        void set_debug_level(int d) { _debug = d; }
+
                 private:
                         void init_branches(TTree * t);
                         void init_trees();
@@ -40,6 +47,7 @@ namespace bb {
                         std::vector<ULong64_t> _t_entry;
                         std::vector<std::string> * _t_names = 0;
                         int _ct = 0; // current tree index
+                        int _debug = 0;
         };
 }
 
