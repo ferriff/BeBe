@@ -8,3 +8,6 @@ target_include_directories (bebe_reader PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library (bebe_pulse SHARED pulse.cc)
 target_include_directories (bebe_pulse PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library (bebe_tree SHARED tree_reader.cc event.cc)
+target_include_directories (bebe_tree PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

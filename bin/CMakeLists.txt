@@ -10,3 +10,7 @@ target_link_libraries (bin2root LINK_PUBLIC bebe_reader Core RIO Tree)
 # -- quickana
 add_executable (quickana quickana.cc)
 target_link_libraries (quickana LINK_PUBLIC bebe_pulse Core RIO Tree Hist)
+
+# -- player
+add_executable (player player.cc)
+target_link_libraries (player LINK_PUBLIC bebe_pulse bebe_tree Core RIO Tree Hist)

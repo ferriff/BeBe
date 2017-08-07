@@ -86,7 +86,7 @@ int main(int argc, char ** argv)
         } else {
                 // streamer-mode binary file
                 for (int i = optind; i < argc; ++i) {
-                        dr.read_streamer_mode_file(argv[1]);
+                        dr.read_streamer_mode_file(argv[i]);
                 }
         }
         return 0;

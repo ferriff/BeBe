@@ -5,8 +5,9 @@
 
 namespace bb {
 
-        typedef int16_t  daqint_t;
+        typedef int16_t      daqint_t;
         //typedef uint16_t bbsize;
-        typedef float    real_t;
+        typedef float        real_t;
+        typedef unsigned int uint_t;
 
 }
