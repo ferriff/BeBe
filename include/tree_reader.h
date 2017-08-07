@@ -21,7 +21,7 @@ namespace bb {
 
                         ~tree_reader() {};
 
-                        event & e() { return _evt; }
+                        const event & e() { return _evt; }
 
                         void set_detector(const char * dname);
                         void set_detector(size_t idet);
@@ -32,6 +32,7 @@ namespace bb {
 
                         size_t detector() { return _ct; }
                         std::string detector_name() { return (*_t_names)[_ct]; }
+                        const std::vector<std::string> & detector_names() { return (*_t_names); }
 
                         size_t n_detectors() { return _t.size(); }
 
