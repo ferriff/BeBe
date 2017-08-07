@@ -14,3 +14,7 @@ target_link_libraries (quickana LINK_PUBLIC bebe_pulse Core RIO Tree Hist)
 # -- player
 add_executable (player player.cc)
 target_link_libraries (player LINK_PUBLIC bebe_pulse bebe_tree Core RIO Tree Hist)
+
+# -- monito
+add_executable (monito monito.cc)
+target_link_libraries (monito LINK_PUBLIC bebe_pulse bebe_tree Core RIO Tree Hist)
