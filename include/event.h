@@ -17,7 +17,6 @@ namespace bb {
                 friend class tree_reader;
 
                 public:
-                        event() {};
 
                         ~event();
 
