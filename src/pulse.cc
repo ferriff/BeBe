@@ -15,7 +15,7 @@ bb::pulse::pulse(size_t nsamples, const daqint_t * data) :
 
 bb::pulse::~pulse()
 {
-        //if (_data) free(_data);
+        if (_data) free(_data);
 }
 
 void bb::pulse::set_data(const daqint_t * data)
@@ -89,16 +89,26 @@ bb::real_t bb::pulse::rms(size_t start, size_t size)
 std::pair<bb::real_t, bb::real_t> bb::pulse::maximum(size_t start, size_t size)
 {
         real_t m = -std::numeric_limits<real_t>::max();
-        //std::cerr << "--> m = " << m << "\n";
-        //fprintf(stderr, "--> m = %lf\n", m);
         real_t im = 0;
         for (size_t i = start; i < size; ++i) {
-                //fprintf(stderr, "--> %d %f %f\n", i, m, _data[i]);
                 if (_data[i] > m) {
                         m = _data[i];
                         im = i;
                 }
-                //getchar();
+        }
+        return std::make_pair(im, m);
+}
+
+
+std::pair<bb::real_t, bb::real_t> bb::pulse::minimum(size_t start, size_t size)
+{
+        real_t m = std::numeric_limits<real_t>::max();
+        real_t im = 0;
+        for (size_t i = start; i < size; ++i) {
+                if (_data[i] < m) {
+                        m = _data[i];
+                        im = i;
+                }
         }
         return std::make_pair(im, m);
 }

@@ -36,6 +36,7 @@ namespace bb {
                         real_t average(size_t start, size_t size);
                         real_t rms(size_t start, size_t size);
                         std::pair<real_t, real_t> maximum(size_t start, size_t size);
+                        std::pair<real_t, real_t> minimum(size_t start, size_t size);
                         std::pair<real_t, real_t> maximum_fitted(size_t start, size_t size);
                         real_t decay_time(size_t imax, real_t fraction);
                         real_t rise_time(size_t imax, real_t fraction);
